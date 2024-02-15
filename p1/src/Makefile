@@ -3,6 +3,6 @@ CC = gcc
 OUTPUT = ish
 
 all: ${OBJS}
-	${CC} ${OBJS} -o ${OUTPUT} -Wall -g
+	${CC} ${OBJS} -o ${OUTPUT} -g
 clean:
 	rm -f ish
