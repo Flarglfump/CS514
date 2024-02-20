@@ -2,9 +2,17 @@
 Author: Gavin Witsken
 Program: ish - simple shell
 File: ish.h
-Created: 1:29 AM, 8 Feb 2024
-Modified: 1:29 PM, 8 Feb 2024
 */
+#pragma once
 
 #include "parser.h"
 #include "lexer.h"
+#include "env.h"
+
+#include <unistd.h>
+#include <limits.h>
+#include <signal.h>
+
+char PROMPT[256] = {0};
+
+void ish_init(char ** prev_envp);

@@ -1,32 +1,39 @@
-#pragma once
 /*
 Author: Gavin Witsken
 Program: ish - simple shell
 File: parser.h
-Created: 10:25 AM, 31 Jan 2024
-Modified: 12:55 PM, 31 Jan 2024
 */
 
+#pragma once
 #include "lexer.h"
 
-enum CMD_TOKEN_TYPE {
-    WORD,
+enum CMD_TYPE {
+    SEP_REDIRECT_IN,
+    SEP_REDIRECT_OUT,
+    SEP_REDIRECT_ERROR,
+    SEP_APPEND,
+    SEP_APPEND_ERROR,
+    SEP_LINE,
     COMMAND,
-    FILENAME,
-    BACKGROUND,
-    PIPE,
-    PIPE_ERROR,
-    SEMICOLON,
-    REDIRECT_IN,
-    REDIRECT_OUT,
-    REDIRECT_ERROR,
-    APPEND,
-    APPEND_ERROR,
-    NONE
+    FILE,
+    UNKOWN
 };
 
-typedef struct command {
-    
-    enum CMD_TOKEN_TYPE type;
-    bool is_valid;
-} command_t;
+// Represents a single "command" token unit
+typedef struct command_token {
+    char * path; // path of command to execute - must be freed
+    char ** argv; // argv array for exec - self and internals must be freed
+    int argc; // number of arguments in argv array
+    enum CMD_TYPE type;
+} command_token_t;
+
+typedef struct command_line {
+    command_token_t * commands; // must be freed
+} command_line_t;
+
+typedef struct command_line_sequence {
+    command_line_t * lines;
+    size_t line_count;
+} command_line_sequence_t;
+
+command_line_sequence_t parse_token_list (const token_buffer_list_t * const t_list);

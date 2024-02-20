@@ -1,9 +1,7 @@
 /*
 Author: Gavin Witsken
 Program: ish - simple shell
-File: parser.c
-Created: 12:45 PM, 31 Jan 2024
-Modified: 12:45 PM, 31 Jan 2024
+File: lexer.c
 */
 
 #include "lexer.h"
@@ -14,7 +12,7 @@ void token_buffer_init(token_buffer_t * buf, const size_t buf_size) {
     }
     buf->buf_size = buf_size;
     buf->token_len = 0;
-    buf->buff = (char*) calloc(buf_size, sizeof(char));
+    buf->buffer = (char*) calloc(buf_size, sizeof(char));
     buf->is_special = false;
     buf->is_valid = true;
 }
@@ -24,8 +22,8 @@ token_buffer_t * token_buffer_create_and_init(const size_t buf_size) {
     return new_token_buf;
 }
 void token_buffer_free(token_buffer_t * buf) {
-    if (buf->buff) {
-        free(buf->buff);
+    if (buf->buffer) {
+        free(buf->buffer);
     }   
 }
 void token_buffer_append(token_buffer_t * buf, const char ch) {
@@ -33,11 +31,11 @@ void token_buffer_append(token_buffer_t * buf, const char ch) {
         // Resize if needed
         size_t new_buf_size = buf->buf_size * 2;
         char* new_buf = (char*) calloc(new_buf_size, sizeof(char));
-        memccpy(new_buf, buf->buff, buf->token_len, sizeof(char));
-        free(buf->buff);
-        buf->buff = new_buf;
+        memccpy(new_buf, buf->buffer, buf->token_len, sizeof(char));
+        free(buf->buffer);
+        buf->buffer = new_buf;
     }
-    buf->buff[(buf->token_len)++] = ch;
+    buf->buffer[(buf->token_len)++] = ch;
 }
 
 void token_buffer_list_init(token_buffer_list_t * list) {
@@ -84,7 +82,7 @@ bool is_special_char(const char ch) {
 }
 
 bool is_whitespace_sep(const char ch) {
-    return (ch == ' ' || ch == '\t' || ch == '\n'); 
+    return (ch == ' ' || ch == '\t');
 }
 
 char peek1(const char * const str, const int cur_pos, const size_t max_size) {
@@ -306,7 +304,7 @@ void token_buffer_list_print(const token_buffer_list_t list) {
 
     unsigned int i = 0;
     while (cur_node != NULL) {
-        printf("\t%d (%s): %s\n", i, cur_node->token_buf.is_special ? "special" : "not special", cur_node->token_buf.buff);
+        printf("\t%d (%s): %s\n", i, cur_node->token_buf.is_special ? "special" : "not special", cur_node->token_buf.buffer);
         cur_node = cur_node->next;
         i++;
     }

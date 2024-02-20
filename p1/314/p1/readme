@@ -1,0 +1,79 @@
+Project: pish
+
+By: Timothy Hemphill & Gavin Witsken
+
+Invoke make to compile the program using the makefile
+
+An executable called "pish" will be created
+
+pish can be started by invoking ./pish from the directory that the executable is in - this is the directory the shell will start in
+
+Signal handling:
+SIGINT, SIGSTP, and SIGTERM are ignored
+The shell can be terminated with SIGQUIT signal (ctrl + \) if necessary
+
+
+Initialization:
+Upon startup, the shell will ignore some signals, initialize a few environment variables (in pish's internal environment variable list)
+
+environment variable DIR is the current directory
+environment variable HOME is the home directory - initialized to wherever pish from wherever pish is started from
+
+After that, the shell attempt to open a file at the path "./.pishrc"
+If successful, the file will be read line by line and each line will be run through a system() call
+If unsuccessful, an error message will be printed to the screen, and the shell will continue with its first prompt
+
+Arguments are delimited by whitespace - even if quotes surround it
+
+    ex: cd "Project 1"
+
+    is interpreted as 3 arguments:
+
+    char** args = { cd,"Project,1" } 
+
+
+Built-in function cd only works to change directory for paths with no "/" character, must always be two arguments 
+
+    ex:     cd p1           is valid
+    ex:     cd              is not valid
+    ex:     cd p1/dir       is not valid
+    ex:     cd ./p1         is not valid
+
+
+Built-in function exit will exit shell - should work as long first argument of any pipeline component is "exit"
+
+ex: exit
+
+
+Built-in function setenv will print out pish environment variable list or create new environment variable (if creating a variable that already exists, value will be overwritten for already existing variable)
+
+    ex:     setenv                  will print out list of environment variables
+    ex:     setenv var value        will create environment variable "var" with value "value"
+
+
+Built-in function unsetenv will delete a variable from the pish environment variable list
+Note: deleting "DIR" will cause a segmentation fault - try not to do that :] )
+
+    ex: unsetenv VAR                will delete environment variable "VAT"
+
+
+
+
+
+Piping and Redirection:
+
+Any separator (|, <, >, >>) may not be first or the last argument of an input
+
+    ex: | grep i                is invalid
+    ex: grep i >                is invalid
+
+No two separators may be adjacent arguments
+
+    ex: ls | > grep test        is invalid
+
+
+Output redirection (>, >>) works for at least two components - assuming the second component is a valid filepath
+Input redirection (<) works for at least two components - assuming the second component is a valid filepath
+Piping (|) will work if there are only two components, but redirecting after piping causes strange behavior 🤔
+
+The compiler thinks we deserve an A 🤷

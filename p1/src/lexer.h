@@ -1,11 +1,9 @@
-#pragma once
 /*
 Author: Gavin Witsken
 Program: ish - simple shell
-File: parser.h
-Created: 12:30 PM, 31 Jan 2024
-Modified: 12:45 PM, 31 Jan 2024
+File: lexer.h
 */
+#pragma once
 
 #include <stdlib.h>
 #include <string.h>
@@ -17,7 +15,7 @@ Modified: 12:45 PM, 31 Jan 2024
 typedef struct token_buffer {
     size_t token_len;
     size_t buf_size;
-    char* buff; // Dynamically allocated - must be freed
+    char* buffer; // Dynamically allocated - must be freed
     bool is_special;
     bool is_valid;
 } token_buffer_t;

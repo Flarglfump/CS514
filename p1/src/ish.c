@@ -1,14 +1,16 @@
 /*
 Author: Gavin Witsken
 Program: ish - simple shell
-File: command.h
-Created: 10:25 AM, 31 Jan 2024
-Modified: 1:29 PM, 8 Feb 2024
+File: ish.c
 */
 
 #include "ish.h"
 
-int main() {
+int main(int argc, char * argv[], char* envp[]) {
+    if (argc >= 2) {
+        // Start shell in different directory
+        
+    }   
 
     while (1) {
         printf("Prompt: $ ");
