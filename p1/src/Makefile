@@ -6,5 +6,7 @@ all: ${OBJS}
 	${CC} ${OBJS} -o ${OUTPUT}
 run: all
 	./${OUTPUT}
+debug: ${OBJS}
+	${CC} ${OBJS} -o ${OUTPUT} -g
 clean:
 	rm -f ish

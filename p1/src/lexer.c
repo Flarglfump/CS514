@@ -78,7 +78,7 @@ void token_buffer_list_append(token_buffer_list_t * list, const token_buffer_t t
 
 
 bool is_special_char(const char ch) {
-    return (ch == '<' || ch == '>' || ch == '&' || ch == ';' || ch == '\n');
+    return (ch == '<' || ch == '>' || ch == '&' || ch == '|'|| ch == ';' || ch == '\n');
 }
 
 bool is_whitespace_sep(const char ch) {
@@ -185,7 +185,7 @@ token_buffer_list_t lex_str(const char * const str) {
                     token_buffer_init(&t_buf, TOKEN_BUF_SIZE);
                 }
             } else if (is_special_char(cur_char)) {
-                if (cur_char == ';' || cur_char == '\n' || cur_char == '<') {
+                if (cur_char == ';' || cur_char == '\n' || cur_char == '<' || cur_char == '|' || cur_char == '&') {
                     // Treat as single-char separator token
                     // Add existing token if size is > 0
                     if (t_buf.token_len > 0) {
