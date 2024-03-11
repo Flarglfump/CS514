@@ -45,4 +45,13 @@ void ish_var_list_free(ish_var_list_t * varList);
 ish_var_t * ish_var_list_find(ish_var_list_t * varList, const char * key);
 /* Remove ish variable in list with name key. If found, return 0; else, 1. */
 int ish_var_list_remove(ish_var_list_t * varList, const char * key);
-
+/* Append var to list internally, makes deep copy */
+void ish_var_list_append_val(ish_var_list_t * varList, const char * key, const char * val);
+/* Append var to list internally, makes deep copy */
+void ish_var_list_append_vals(ish_var_list_t * varList, const char * key, const char ** vals, const size_t numVals);
+/* Update existing var or add new var to list, makes deep copy */
+void ish_var_list_update_var_val(ish_var_list_t * varList, const char * key, const char * val);
+/* Update existing var or add new var to list, makes deep copy */
+void ish_var_list_update_var_vals(ish_var_list_t * varList, const char * key, const char ** vals, const size_t numVals);
+/* Returns pointer to values array of ish variable with name key. Data at numVals pointer is set to the variable's value count. Returns NULL if any pointer arg is NULL or if var with given key is not found. */
+const char ** ish_var_list_get_val(ish_var_list_t * varList, const char * key, size_t * numVals);

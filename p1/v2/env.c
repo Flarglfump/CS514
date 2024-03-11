@@ -213,3 +213,159 @@ int ish_var_list_remove(ish_var_list_t * varList, const char * key) {
     }
     return 0;
 }
+void ish_var_list_append_val(ish_var_list_t * varList, const char * key, const char * val) {
+    if (varList == NULL || key == NULL) {
+        return;
+    }
+
+    ish_var_t * var = (ish_var_t *) calloc(1, sizeof(ish_var_t));
+    ish_var_init(var);
+    
+    // Copy key
+    if (var->key != NULL) {
+        free(var->key);
+    }
+    const size_t keyLen = strlen(key);
+    var->key = (char*) calloc(keyLen + 1, sizeof(char));
+    strncpy(var->key, key, keyLen * sizeof(char));
+
+    // Copy val
+    ish_var_add_val(var, val);
+
+    // Insert new var in list
+    if (varList->head == NULL) {
+        varList->head = var;
+        varList->var_count = 1;
+    } else {
+        ish_var_t * cur = varList->head;
+        size_t cnt = 1;
+        while (cur->next != NULL) {
+            cur = cur->next;
+            cnt++;
+        }
+        cur->next = var;
+    }
+}
+void ish_var_list_append_vals(ish_var_list_t * varList, const char * key, const char ** vals, const size_t numVals) {
+    if (varList == NULL || key == NULL) {
+        return;
+    }
+
+    ish_var_t * var = (ish_var_t *) calloc(1, sizeof(ish_var_t));
+    ish_var_init(var);
+    
+    // Copy key
+    if (var->key != NULL) {
+        free(var->key);
+    }
+    const size_t keyLen = strlen(key);
+    var->key = (char*) calloc(keyLen + 1, sizeof(char));
+    strncpy(var->key, key, keyLen * sizeof(char));
+
+    // Copy val
+    ish_var_add_vals(var, vals, numVals);
+
+    // Insert new var in list
+    if (varList->head == NULL) {
+        varList->head = var;
+        varList->var_count = 1;
+    } else {
+        ish_var_t * cur = varList->head;
+        size_t cnt = 1;
+        while (cur->next != NULL) {
+            cur = cur->next;
+            cnt++;
+        }
+        cur->next = var;
+    }
+}
+void ish_var_list_update_var_val(ish_var_list_t * varList, const char * key, const char * val) {
+    if (varList == NULL || key == NULL) {
+        return;
+    }
+    ish_var_t * var = ish_var_list_find(varList, key);
+    
+    // Allocate and copy key or clear vals as needed
+    if (var == NULL) {
+        ish_var_t * var = (ish_var_t *) calloc(1, sizeof(ish_var_t));
+        ish_var_init(var);
+
+        if (var->key != NULL) {
+            free(var->key);
+        }
+        const size_t keyLen = strlen(key);
+        var->key = (char*) calloc(keyLen + 1, sizeof(char));
+        strncpy(var->key, key, keyLen * sizeof(char));
+    } else {
+        ish_var_clear_vals(var);
+    }
+
+    // Copy val
+    ish_var_add_val(var, val);
+
+    if (varList->head == NULL) {
+        varList->head = var;
+        varList->var_count = 1;
+    } else {
+        ish_var_t * cur = varList->head;
+        size_t cnt = 1;
+        while (cur->next != NULL) {
+            cur = cur->next;
+            cnt++;
+        }
+        cur->next = var;
+    }
+}
+void ish_var_list_update_var_vals(ish_var_list_t * varList, const char * key, const char ** vals, const size_t numVals) {
+    if (varList == NULL || key == NULL) {
+        return;
+    }
+
+    ish_var_t * var = ish_var_list_find(varList, key);
+    
+    // Allocate and copy key or clear vals as needed
+    if (var == NULL) {
+        ish_var_t * var = (ish_var_t *) calloc(1, sizeof(ish_var_t));
+        ish_var_init(var);
+
+        if (var->key != NULL) {
+            free(var->key);
+        }
+        const size_t keyLen = strlen(key);
+        var->key = (char*) calloc(keyLen + 1, sizeof(char));
+        strncpy(var->key, key, keyLen * sizeof(char));
+    } else {
+        ish_var_clear_vals(var);
+    }
+
+    // Copy val
+    ish_var_add_vals(var, vals, numVals);
+
+    if (varList->head == NULL) {
+        varList->head = var;
+        varList->var_count = 1;
+    } else {
+        ish_var_t * cur = varList->head;
+        size_t cnt = 1;
+        while (cur->next != NULL) {
+            cur = cur->next;
+            cnt++;
+        }
+        cur->next = var;
+    }
+}
+
+const char ** ish_var_list_get_val(ish_var_list_t * varList, const char * key, size_t * numVals) {
+    if (varList == NULL || key == NULL || numVals == NULL) {
+        return NULL;
+    }
+
+    ish_var_t * var = ish_var_list_find(varList, key);
+
+    if (var == NULL) {
+        return NULL;
+    }
+
+    *numVals = var->val_count;
+    return var->values;
+}

@@ -92,6 +92,5 @@ char peek3(const char * str, const size_t len, const int position);
 int is_blank(const char c);
 /* Returns 1 if character is a special character (start of potential unquoted special string), 0 if not */
 int is_special_char(const char c);
-
 /* Prints the lexed word list in a nice, formatted way */
 void ish_word_list_print(const ish_word_list_t wordList);
