@@ -20,15 +20,10 @@ int main(int argc, char * argv[]) {
         printf("Characters read: %lu\n", inputStrLen);
         printf("Buffer size: %lu\n", inputBufSize);
 
-        if (inputStrLen > 0 && inputBufSize > 0) {
-            inputStr[inputStrLen - 1] = '\0';
-        }
-        printf("String read: \"%s\"\n", inputStr);
-
         lexedWordList = lex_str(inputStr, &lex_error, 1);
 
         ish_word_list_print(lexedWordList);
-        
+
         ish_word_list_free(&lexedWordList);
     }
 
