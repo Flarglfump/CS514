@@ -6,6 +6,7 @@ File: lex.h
 #pragma once
 
 #include "ish.h"
+#include "error.h"
 
 /* enum type indicating how a word is quoted */
 typedef enum ish_quote_type {
@@ -13,6 +14,8 @@ typedef enum ish_quote_type {
     ISH_QUOTE_TYPE_SINGLE, // 'string'
     ISH_QUOTE_TYPE_BACKTICK, // `string`
     ISH_QUOTE_TYPE_BACKSLASH, // \string
+    ISH_QUOTE_TYPE_DOUBLE_ESCAPED, // "\$string"
+    ISH_QUOTE_TYPE_BACKTICK_ESCAPED, // `echo \`string\` `
     ISH_QUOTE_TYPE_NONE // string
 } ish_quote_type_t;
 
@@ -59,7 +62,7 @@ void ish_word_free(ish_word_t * word);
 /* Struct used as a node for an ish_word_list */
 typedef struct ish_word_list_node {
     ish_word_t data;
-    ish_word_list_node_t * next;
+    struct ish_word_list_node * next;
 } ish_word_list_node_t;
 
 /* Struct used to hold singly-linked-list of ish word nodes */
@@ -77,13 +80,18 @@ void ish_word_list_append(ish_word_list_t * list, const ish_word_t word);
 void ish_word_list_free(ish_word_list_t * list);
 
 /* Lexically tokenizes string and places tokens into returned ish word list */
-ish_word_list_t lex_str(const char * str);
+ish_word_list_t lex_str(const char * str, ish_lex_error_t * lex_error, const int is_interactive);
+
 /* Returns character value in str at index position + 1 */
 char peek1(const char * str, const size_t len, const int position);
 /* Returns character value in str at index position + 2 */
 char peek2(const char * str, const size_t len, const int position);
-
+/* Returns character value in str at index position + 3 */
+char peek3(const char * str, const size_t len, const int position);
 /* Returns 1 if character is a valid word separator blank, 0 if not */
 int is_blank(const char c);
 /* Returns 1 if character is a special character (start of potential unquoted special string), 0 if not */
 int is_special_char(const char c);
+
+/* Prints the lexed word list in a nice, formatted way */
+void ish_word_list_print(const ish_word_list_t wordList);

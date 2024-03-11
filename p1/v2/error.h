@@ -1,10 +1,12 @@
 /*
 Author: Gavin Witsken
 Program: ish - simple shell
-File: main.c
+File: error.h
 */
+#pragma once
+#include "ish.h"
 
-typedef enum ISH_LEX_ERROR {
+typedef enum ish_lex_error {
     ISH_LEX_ERR_OPEN_SINGLE_QUOTE,
     ISH_LEX_ERR_OPEN_DOUBLE_QUOTE,
     ISH_LEX_ERR_OPEN_BACK_QUOTE,
@@ -13,4 +15,4 @@ typedef enum ISH_LEX_ERROR {
     ISH_LEX_ERR_OPEN_SQUARE_BRACKET,
     ISH_LEX_ERR_OPEN_PAREN,
     ISH_LEX_ERR_NONE
-} ISH_LEX_ERROR_T;
+} ish_lex_error_t;

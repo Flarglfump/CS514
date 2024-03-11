@@ -5,6 +5,7 @@ File: lex.c
 */
 
 #include "lex.h"
+#include <stdio.h>
 
 /* ish stack stuff*/
 
@@ -87,6 +88,7 @@ void ish_word_list_init(ish_word_list_t * list) {
 }
 void ish_word_list_append(ish_word_list_t * list, const ish_word_t word) {
     ish_word_list_node_t * newNode = calloc(1, sizeof(ish_word_list_node_t));
+
     newNode->data = word;
     newNode->next = NULL;
     if (list->tail == NULL) {
@@ -96,6 +98,8 @@ void ish_word_list_append(ish_word_list_t * list, const ish_word_t word) {
         list->tail->next = newNode;
         list->tail = newNode;
     }
+
+    (list->word_count)++;
 }
 void ish_word_list_free(ish_word_list_t * list) {
     ish_word_list_node_t * cur = list->head;
@@ -115,15 +119,12 @@ void ish_word_list_free(ish_word_list_t * list) {
 
 /* Actual lexing stuff */
 
-ish_word_list_t lex_str(const char * str) {
+ish_word_list_t lex_str(const char * str, ish_lex_error_t * lex_error, const int is_interactive) {
     ish_word_list_t wordList;
     ish_word_list_init(&wordList);
 
     ish_word_t curWord;
     ish_word_init(&curWord);
-
-    ish_stack_t stack;
-    ish_stack_init(&stack);
     
     size_t inputLen = strlen(str);
     size_t curPos = 0;
@@ -133,27 +134,133 @@ ish_word_list_t lex_str(const char * str) {
 
     while (curPos < inputLen) {
         curChar = str[curPos];
-        if (stack.len > 0) {
-            curQuoteType = ish_stack_top(&stack);
-        }
 
+        /* Note on quoted sequences in input: 
+            This pass will not handle parsing nested backslash escape sequences within other quoted sequences. 
+        */
         if (curQuoteType == ISH_QUOTE_TYPE_DOUBLE) {
-            // Inside double quote "string"
+            // Inside double quoted "string" - Allows for variable and command substitution; Only escapes a few chars with backlash
+            if (curChar == '"') {
+                // End of double quote string
+                const char nextChar = peek1(str, inputLen, curPos);
+                if (!(is_blank(nextChar) || nextChar == '\0' || is_special_char(nextChar))) {
+                    curWord.appendNext = 1;
+                }
+                ish_word_trim_allocation(&curWord);
+                ish_word_list_append(&wordList, curWord);
+                ish_word_init(&curWord);
 
+                curQuoteType = ISH_QUOTE_TYPE_NONE;
+            } else if (curChar == '\\') {
+                const char nextChar = peek1(str, inputLen, curPos);
+                const char nextNextChar = peek2(str, inputLen, curPos);
+                if (nextChar == '$' || nextChar == '"' || nextChar == '\\' || nextChar == '`') {
+                    // Valid escape sequence
+                    if (curWord.wordLen > 0) {
+                        curWord.appendNext = 1;
+                        ish_word_trim_allocation(&curWord);
+                        ish_word_list_append(&wordList, curWord);
+                        ish_word_init(&curWord);
+                    }
+
+                    curWord.quoteType = ISH_QUOTE_TYPE_DOUBLE_ESCAPED;
+                    if (nextNextChar != '"') {
+                        curWord.appendNext = 1;
+                    }
+                    curPos++;
+                    ish_word_append(&curWord, nextChar);
+                    ish_word_trim_allocation(&curWord);
+                    ish_word_list_append(&wordList, curWord);
+
+                    ish_word_init(&curWord);
+                    if (nextNextChar != '"') {
+                        curWord.quoteType = ISH_QUOTE_TYPE_DOUBLE;
+                    }   
+                } else {
+                    // Not a recognized escape sequence - just another character in string
+                    ish_word_append(&curWord, curChar);
+                }
+            } else {
+                // Character in string
+                ish_word_append(&curWord, curChar);
+            }
         } else if (curQuoteType == ISH_QUOTE_TYPE_SINGLE) {
-            // Inside single quote 'string'
+            // Inside single quoted 'string' - no escape sequences or special chars, except backslash escaped newline
+            if (curChar == '\'') {
+                // Potential end of single quote string
+                const char nextChar = peek1(str, inputLen, curPos);
+                if (nextChar == '\n') {
+                    // Add newline char to string
+                    curPos++;
+                    ish_word_append(&curWord, nextChar);
+                } else {
+                    // End of single quote string
+                    if (!(is_blank(nextChar) || nextChar != '\0' || is_special_char(nextChar))) {
+                        curWord.appendNext = 1;
+                    }
+                    ish_word_trim_allocation(&curWord);
+                    ish_word_list_append(&wordList, curWord);
+                    ish_word_init(&curWord);
 
+                    curQuoteType = ISH_QUOTE_TYPE_NONE;
+                }   
+            } else {
+                // Character in string
+                ish_word_append(&curWord, curChar);
+            }
         } else if (curQuoteType == ISH_QUOTE_TYPE_BACKTICK) {
-            // Inside back quote `string`
+            // Inside back tick quoted `string` - Allows for variable and command substitution, backslash escaping works the same as if unquoted
+            if (curChar == '`') {
+                // End of backtick quoted string
+                ish_word_trim_allocation(&curWord);
+                ish_word_list_append(&wordList, curWord);
+                ish_word_init(&curWord);
+                
+                curQuoteType = ISH_QUOTE_TYPE_NONE;
+            } else if (curChar == '\\') {
+                // Inside backslash quoted \string - escape curChar
+                const char nextChar = peek1(str, inputLen, curPos);
+                const char nextNextChar = peek2(str, inputLen, curPos);
 
+                curWord.appendNext = 1;
+                ish_word_trim_allocation(&curWord);
+                ish_word_list_append(&wordList, curWord);
+                ish_word_init(&curWord);
+
+                curWord.quoteType = ISH_QUOTE_TYPE_BACKTICK_ESCAPED;
+                if (nextNextChar != '`') {
+                    curWord.appendNext = 1;
+                }
+                ish_word_append(&curWord, nextChar);
+                
+                curPos++;
+                ish_word_trim_allocation(&curWord);
+                ish_word_list_append(&wordList, curWord);
+
+                ish_word_init(&curWord);
+                if (nextNextChar != '`') {
+                    curWord.quoteType = ISH_QUOTE_TYPE_BACKTICK;
+                }
+            }
+            
         } else if (curQuoteType == ISH_QUOTE_TYPE_BACKSLASH) {
-            // Inside backslash quoted \string
+            // Inside backslash quoted \string - escape curChar
+            const char nextChar = peek1(str, inputLen, curPos);
 
+            ish_word_append(&curWord, curChar);
+            if (!(is_blank(nextChar) || nextChar != '\0' || is_special_char(nextChar))) {
+                curWord.appendNext = 1;
+            }
+            ish_word_trim_allocation(&curWord);
+            ish_word_list_append(&wordList, curWord);
+            ish_word_init(&curWord);
+
+            curQuoteType = ISH_QUOTE_TYPE_NONE;
         } else {
             // Not inside quoted string
             if (curChar == '"') {
                 // Opening double quote
-                ish_stack_push(&stack, ISH_QUOTE_TYPE_DOUBLE);
+               curQuoteType = ISH_QUOTE_TYPE_DOUBLE;
 
                 if (curWord.wordLen > 0) {
                     curWord.appendNext = 1;
@@ -165,7 +272,7 @@ ish_word_list_t lex_str(const char * str) {
                 curWord.quoteType = ISH_QUOTE_TYPE_DOUBLE;
             } else if (curChar == '\'') {
                 // Opening single quote
-                ish_stack_push(&stack, ISH_QUOTE_TYPE_SINGLE);
+                curQuoteType = ISH_QUOTE_TYPE_SINGLE;
 
                 if (curWord.wordLen > 0) {
                     curWord.appendNext = 1;
@@ -177,7 +284,7 @@ ish_word_list_t lex_str(const char * str) {
                 curWord.quoteType = ISH_QUOTE_TYPE_SINGLE;
             } else if (curChar == '`') {
                 // Opening back quote
-                ish_stack_push(&stack, ISH_QUOTE_TYPE_BACKTICK);
+                curQuoteType = ISH_QUOTE_TYPE_BACKTICK;
 
                 if (curWord.wordLen > 0) {
                     curWord.appendNext = 1;
@@ -189,7 +296,7 @@ ish_word_list_t lex_str(const char * str) {
                 curWord.quoteType = ISH_QUOTE_TYPE_BACKTICK;
             } else if (curChar == '\\') {
                 // Opening back slash
-                ish_stack_push(&stack, ISH_QUOTE_TYPE_BACKSLASH);
+                curQuoteType = ISH_QUOTE_TYPE_BACKSLASH;
 
                 if (curWord.wordLen > 0) {
                     curWord.appendNext = 1;
@@ -212,7 +319,6 @@ ish_word_list_t lex_str(const char * str) {
                     const char nextChar = peek1(str, inputLen, curPos);
                     if (nextChar == '\n') {
                         // Windows style newline - skip a character forward in curPos
-                        curPos++;  
                         if (curWord.wordLen > 0) {
                             ish_word_trim_allocation(&curWord);
                             ish_word_list_append(&wordList, curWord);
@@ -221,6 +327,7 @@ ish_word_list_t lex_str(const char * str) {
 
                         ish_word_append(&curWord, curChar);
                         ish_word_trim_allocation(&curWord);
+                        curPos++;
                         ish_word_list_append(&wordList, curWord);
 
                         ish_word_init(&curWord);
@@ -245,15 +352,156 @@ ish_word_list_t lex_str(const char * str) {
 
                     ish_word_init(&curWord);
                 } else if (is_special_char(curChar)) {
-                    // 
+                    const char nextChar = peek1(str, inputLen, curPos);
+                    const char nextNextChar = peek2(str, inputLen, curPos);
+                    const char nextNextNextChar = peek3(str, inputLen, curPos);
 
+                    // Other special character
+                    switch(curChar) {
+                        case '&': // Background operator. Treat as single char word.   
+                        case ';': // Pipeline terminator operator. Treat as single char word. 
+                        case '(': // Open paren operator. Treat as single char word. 
+                        case ')': // Closing paren operator. Treat as single char word. 
+                            if (curWord.wordLen > 0) {
+                                ish_word_trim_allocation(&curWord);
+                                ish_word_list_append(&wordList, curWord);
+                                ish_word_init(&curWord);
+                            }
+                            ish_word_append(&curWord, curChar);
+                            ish_word_trim_allocation(&curWord);
+                            ish_word_list_append(&wordList, curWord);
 
+                            ish_word_init(&curWord);
+                        break;
+
+                        case '#':
+                            // If non-terminal (not interactive) input, rest of line should be treated as a comment and ignored
+                            if (!is_interactive) {
+                                if (curWord.wordLen > 0) {
+                                    ish_word_trim_allocation(&curWord);
+                                    ish_word_list_append(&wordList, curWord);
+                                    ish_word_init(&curWord);
+                                }
+                                while (curPos < inputLen && curChar != '\n') {
+                                    curPos++;
+                                    curChar = str[curPos];
+                                }
+                            }    
+                        break;
+
+                        case '|':
+                            // '|', '||', or '|&'
+                            if (curWord.wordLen > 0) {
+                                ish_word_trim_allocation(&curWord);
+                                ish_word_list_append(&wordList, curWord);
+                                ish_word_init(&curWord);
+                            }
+
+                            ish_word_append(&curWord, curChar);
+                            if (nextChar == '|' || nextChar == '&') {
+                                // '||' or '|&'
+                                ish_word_append(&curWord, nextChar);
+                            }
+
+                            ish_word_trim_allocation(&curWord);
+                            ish_word_list_append(&wordList, curWord);
+                            curPos += curWord.wordLen - 1;
+                            ish_word_init(&curWord);
+                        break;
+
+                        case '<':
+                            // '<' or '<<'
+                            if (curWord.wordLen > 0) {
+                                ish_word_trim_allocation(&curWord);
+                                ish_word_list_append(&wordList, curWord);
+                                ish_word_init(&curWord);
+                            }
+
+                            ish_word_append(&curWord, curChar);
+                            if (nextChar == '<') {
+                                // '<'
+                                ish_word_append(&curWord, nextChar);
+                            }
+
+                            ish_word_trim_allocation(&curWord);
+                            ish_word_list_append(&wordList, curWord);
+                            curPos += curWord.wordLen - 1;
+                            ish_word_init(&curWord);
+                        break;
+
+                        case '>':
+                            // '>', '>!', '>&', '>&!', '>>', '>>!', '>>&', or '>>&!'
+                            if (curWord.wordLen > 0) {
+                                ish_word_trim_allocation(&curWord);
+                                ish_word_list_append(&wordList, curWord);
+                                ish_word_init(&curWord);
+                            }
+
+                            ish_word_append(&curWord, curChar);
+                            if (nextChar == '>') {
+                                // '>>', '>>!', '>>&', or '>>&!'
+                                ish_word_append(&curWord, nextChar);
+                                if (nextNextChar == '!') {
+                                    // '>>!'
+                                    ish_word_append(&curWord, nextNextChar);
+                                } else if (nextNextChar == '&') {
+                                    // '>>&' or '>>&!'
+                                    ish_word_append(&curWord, nextNextChar);
+                                    if (nextNextNextChar == '!') {
+                                        // '>>&!'
+                                        ish_word_append(&curWord, nextNextNextChar);
+                                    }
+                                }
+                            } else if (nextChar == '!') {
+                                // '>!'
+                                ish_word_append(&curWord, nextChar);
+                            } else if (nextChar == '&') {
+                                // '>&' or '>&!'
+                                ish_word_append(&curWord, nextChar);
+                                if (nextNextChar == '!') {
+                                    // '>&!
+                                    ish_word_append(&curWord, nextNextChar);
+                                }
+                            }
+
+                            ish_word_trim_allocation(&curWord);
+                            ish_word_list_append(&wordList, curWord);
+                            curPos += curWord.wordLen - 1;
+                            ish_word_init(&curWord);
+                        break;
+                    }
+                } else {
+                    // Not a special character or other separator - add to word
+                    ish_word_append(&curWord, curChar);
                 }
             }
         }
 
-
         curPos++;
+    }
+
+    // If any words left at the end, add them to the word list
+    if (curWord.wordLen > 0) {
+        ish_word_trim_allocation(&curWord);
+        ish_word_list_append(&wordList, curWord);
+    }
+
+    // Set lexing error status
+    switch(curQuoteType) {
+        case ISH_QUOTE_TYPE_BACKSLASH:
+            *lex_error = ISH_LEX_ERR_OPEN_BACKSLASH;
+        break;
+        case ISH_QUOTE_TYPE_DOUBLE:
+            *lex_error = ISH_LEX_ERR_OPEN_DOUBLE_QUOTE;
+        break;
+        case ISH_QUOTE_TYPE_SINGLE:
+            *lex_error = ISH_LEX_ERR_OPEN_SINGLE_QUOTE;
+        break;
+        case ISH_QUOTE_TYPE_BACKTICK:
+            *lex_error = ISH_LEX_ERR_OPEN_BACK_QUOTE;
+        break;
+        default:
+            *lex_error = ISH_LEX_ERR_NONE;
     }
 
     return wordList;
@@ -270,28 +518,103 @@ char peek2(const char * str, const size_t len, const int position) {
     }
     return str[position + 2];
 }
+char peek3(const char * str, const size_t len, const int position) {
+    if (position >= len - 3) {
+        return '\0';
+    }
+    return str[position + 3];
+}
 
 int is_blank(const char c) {
     return (c == ' ' || c == '\t');
 }
 int is_special_char(const char c) {
-    return (c == '|' 
+    return (
+            c == '&'
+        ||  c == '#'
+        ||  c == '|'
+        ||  c == ';' 
         ||  c == '<' 
         ||  c == '>' 
-        ||  c == '<'
+        ||  c == '('
+        ||  c == ')'
     );
 }
 /*
-Special chars:
+Special chars / sequences:
     '&',
+    '&&',
     '|',
+    '||',
+    '|&',
+    '#',
     ';',
-    '<',
-    '>',
     '(',
     ')',
-    '&&',
-    '||',
-    '<<'
-    '>>'
+    '<',
+    '<<',
+    '>',
+    '>!'
+    '>&',
+    '>&!',
+    '>>',
+    '>>!',
+    '>>&',
+    '>>&!'
 */
+
+void ish_word_list_print(const ish_word_list_t wordList) {
+    printf("Word list (%lu words):\n", wordList.word_count);
+    int printIdx = 1;
+    ish_word_list_node_t * curWord = wordList.head;
+
+    for (size_t i = 0; i < wordList.word_count && curWord != NULL; i++) {
+        // Unquoted = default
+        // Double Quoted = RED
+        // Single Quoted = BLUE
+        // Backtick Quoted = GREEN
+        // Backslash Quoted = BOLD
+
+        printf("\e[0m");
+        if (printIdx) {
+            printf("%lu:\t", i);
+        }
+
+        switch(curWord->data.quoteType) {
+            case ISH_QUOTE_TYPE_DOUBLE:
+                printf("\e[0;31m");
+            break;
+            case ISH_QUOTE_TYPE_DOUBLE_ESCAPED:
+                printf("\e[1;31m");
+            break;
+            case ISH_QUOTE_TYPE_SINGLE:
+                printf("\e[0;34m");
+            break;
+            case ISH_QUOTE_TYPE_BACKTICK:
+                printf("\e[0;32m");
+            break;
+            case ISH_QUOTE_TYPE_BACKTICK_ESCAPED:
+                printf("\e[1;32m");
+            break;
+            case ISH_QUOTE_TYPE_BACKSLASH:
+                printf("\e[1;0m");
+            break;
+            case ISH_QUOTE_TYPE_NONE:
+            default:
+                printf("\e[0m");
+        }
+        
+        printf("%s", curWord->data.wordBuf);
+
+        if (!(curWord->data.appendNext)) {
+            printIdx = 1;
+            printf("\n");
+        } else {
+            printIdx = 0;
+        }
+
+        curWord = curWord->next;
+    }
+
+    printf("\e[0m\n");
+}

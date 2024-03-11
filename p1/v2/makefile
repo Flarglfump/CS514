@@ -1,9 +1,10 @@
-OBJS: ish.o env.o lex.o parse.o main.o
-CC: gcc
-OUTNAME: ish
+OBJS = ish.o env.o lex.o parse.o main.o
+CC = gcc
+OUTNAME = ish
 
 all: ${OBJS}
 	gcc -g ${OBJS} -o ${OUTNAME}
+	rm -f ${OBJS}
 ish.o:
 	gcc -c ish.c -o ish.o
 env.o:
