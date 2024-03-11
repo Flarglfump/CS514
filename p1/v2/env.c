@@ -5,6 +5,7 @@ File: env.c
 */
 
 #include "env.h"
+#include <regex.h>
 
 void ish_var_init(ish_var_t * var) {
     if (var == NULL) {
@@ -158,7 +159,7 @@ void ish_var_list_free(ish_var_list_t * varList) {
 }
 ish_var_t * ish_var_list_find(ish_var_list_t * varList, const char * key) {
     if (varList == NULL || key == NULL) {
-        return;
+        return NULL;
     }
     
     ish_var_t * cur = varList->head;
@@ -367,5 +368,25 @@ const char ** ish_var_list_get_val(ish_var_list_t * varList, const char * key, s
     }
 
     *numVals = var->val_count;
-    return var->values;
+    return (const char **) (var->values);
+}
+int ish_var_key_is_valid(const char * key) {
+    regex_t regex;
+    char matchPattern[] = "^[a-zA-Z_][a-zA-Z0-9_]*$";
+    int res;
+
+    res = regcomp(&regex, matchPattern, REG_EXTENDED);
+    if (res) {
+        return 0; // Could not compile regex
+    }
+
+    res = regexec(&regex, key, 0, NULL, 0);
+
+    regfree(&regex);
+    
+    if (res) {
+        return 0;
+    }
+
+    return 1;
 }

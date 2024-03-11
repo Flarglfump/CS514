@@ -55,3 +55,9 @@ void ish_var_list_update_var_val(ish_var_list_t * varList, const char * key, con
 void ish_var_list_update_var_vals(ish_var_list_t * varList, const char * key, const char ** vals, const size_t numVals);
 /* Returns pointer to values array of ish variable with name key. Data at numVals pointer is set to the variable's value count. Returns NULL if any pointer arg is NULL or if var with given key is not found. */
 const char ** ish_var_list_get_val(ish_var_list_t * varList, const char * key, size_t * numVals);
+
+/* Returns 1 if key follows valid variable name structure, 0 if not */
+int ish_var_key_is_valid(const char * key);
+
+/* Global variable to be used in program */
+ish_var_list_t ish_env;
