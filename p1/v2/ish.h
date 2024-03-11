@@ -12,3 +12,7 @@ File: ish.h
 #ifndef ISH_DEFAULT_BUF_SIZE
 #define ISH_DEFAULT_BUF_SIZE 256
 #endif
+
+#ifndef ISH_DEFAULT_VAL_BUF_SIZE
+#define ISH_DEFAULT_VAL_BUF_SIZE 2
+#endif

@@ -6,10 +6,10 @@ File: main.c
 #include "ish.h"
 #include "lex.h"
 #include <stdio.h>
-
 int main(int argc, char * argv[]) {
 
     char * inputStr = NULL;
+
     size_t inputBufSize;
     size_t inputStrLen = 0;
     ish_word_list_t lexedWordList;
