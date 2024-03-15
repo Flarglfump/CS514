@@ -152,7 +152,7 @@ enum ish_sep_type get_ish_sep_type(const char * str, const size_t len) {
         break;
 
         case 4:
-        strncmp(str, ">>&!", len) == 0 ? ISH_SEP_TYPE_APPEND_OUT_ERR_FORCE :
+            return strncmp(str, ">>&!", len) == 0 ? ISH_SEP_TYPE_APPEND_OUT_ERR_FORCE :
             ISH_SEP_TYPE_NONE;
         break;
 
@@ -217,7 +217,7 @@ ish_pipeline_t * ish_staging_queue_front(ish_staging_queue_t * stagingQueue) {
 }
 void ish_staging_queue_dequeue(ish_staging_queue_t * stagingQueue) {
     if (stagingQueue == NULL || stagingQueue->size == 0) {
-        return NULL;
+        return;
     }
 
     (stagingQueue->head) = ((stagingQueue->head) + 1) % (stagingQueue->capacity);
@@ -239,7 +239,7 @@ ish_pipeline_t * ish_staging_queue_fetch_and_dequeue(ish_staging_queue_t * stagi
 
 void ish_staging_queue_free(ish_staging_queue_t * stagingQueue) {
     if (stagingQueue == NULL) {
-        return NULL;
+        return;
     }
 
     if (stagingQueue->data != NULL) {
