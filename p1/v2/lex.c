@@ -132,6 +132,8 @@ ish_word_list_t lex_str(const char * str, ish_lex_error_t * lex_error, const int
     char curChar = '\0';
     ish_quote_type_t curQuoteType = ISH_QUOTE_TYPE_NONE;
 
+    int hereFileMode = 0;
+
     while (curPos < inputLen) {
         curChar = str[curPos];
 
@@ -361,7 +363,8 @@ ish_word_list_t lex_str(const char * str, ish_lex_error_t * lex_error, const int
                         case '&': // Background operator. Treat as single char word.   
                         case ';': // Pipeline terminator operator. Treat as single char word. 
                         case '(': // Open paren operator. Treat as single char word. 
-                        case ')': // Closing paren operator. Treat as single char word. 
+                        case ')': // Closing paren operator. Treat as single char word.
+                        case '<': // Redirect input operator. Currently, herefile operator '<<' not implemented, so treat '<' as a single char word.
                             if (curWord.wordLen > 0) {
                                 ish_word_trim_allocation(&curWord);
                                 ish_word_list_append(&wordList, curWord);
@@ -407,27 +410,7 @@ ish_word_list_t lex_str(const char * str, ish_lex_error_t * lex_error, const int
                             ish_word_list_append(&wordList, curWord);
                             curPos += curWord.wordLen - 1;
                             ish_word_init(&curWord);
-                        break;
-
-                        case '<':
-                            // '<' or '<<'
-                            if (curWord.wordLen > 0) {
-                                ish_word_trim_allocation(&curWord);
-                                ish_word_list_append(&wordList, curWord);
-                                ish_word_init(&curWord);
-                            }
-
-                            ish_word_append(&curWord, curChar);
-                            if (nextChar == '<') {
-                                // '<'
-                                ish_word_append(&curWord, nextChar);
-                            }
-
-                            ish_word_trim_allocation(&curWord);
-                            ish_word_list_append(&wordList, curWord);
-                            curPos += curWord.wordLen - 1;
-                            ish_word_init(&curWord);
-                        break;
+                        break;     
 
                         case '>':
                             // '>', '>!', '>&', '>&!', '>>', '>>!', '>>&', or '>>&!'
@@ -540,28 +523,6 @@ int is_special_char(const char c) {
         ||  c == ')'
     );
 }
-/*
-Special chars / sequences:
-    '&',
-    '&&',
-    '|',
-    '||',
-    '|&',
-    '#',
-    ';',
-    '(',
-    ')',
-    '<',
-    '<<',
-    '>',
-    '>!'
-    '>&',
-    '>&!',
-    '>>',
-    '>>!',
-    '>>&',
-    '>>&!'
-*/
 
 void ish_word_list_print(const ish_word_list_t wordList) {
     printf("Word list (%lu words):\n", wordList.word_count);
