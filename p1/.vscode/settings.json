@@ -1,10 +1,6 @@
 {
     "files.associations": {
         "*.pl": "prolog",
-        "istream": "c",
-        "string": "c",
-        "*.tcc": "c",
-        "streambuf": "c",
-        "string.h": "c"
+        "env.h": "c"
     }
 }

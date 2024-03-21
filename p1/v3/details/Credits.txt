@@ -1,0 +1,8 @@
+This file is used to credit where ideas, information, or simple source code were pulled from in creation of ish.
+
+xv6 - Simple x86 based operating system created at MIT for educational purposes. This open-source repo includes a file "sh.c" which implements a very basic shell. The design of this shell and its parsing and execution techniques heavily influenced ish.
+link (src): https://github.com/mit-pdos/xv6-public
+
+csh - Simple shell written in c for unix as part of the openbsd project. Much functionality and behavior of ish is intended to model that of csh.
+link (docs): https://linux.die.net/man/1/csh
+link (src): https://github.com/openbsd/src/tree/master/bin/csh

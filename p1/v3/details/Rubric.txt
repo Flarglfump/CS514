@@ -1,0 +1,21 @@
+Grading rubric (and some test cases):
+
+Simple commands               (;)   10/10 : ok    ls   ls -l  ls;ls -a -l;ls
+Pipes                         (|)    4/4 : ok     ls | wc
+Background                    (&)    4/4 : ok     touch somefile &  (should get job number and prompt back, file should be created)
+Redirect in                   (<)    4/4 : ok     cat < somefile (should print somefile)
+Redirect out                  (>)    4/4 : ok     ls -l > somefile (should put output of ls -l into somefile)
+Redirect stdout/stderr        (>&)   4/4 : ok     ls -l &> out   ls -l laksdjfoweur &> out   
+Redirect stdout append        (>>)   4/4 : ok     ls >> out (do this twice, out file should contain output twice)
+Redirect stdout/stderr append (>>&)  4/4 : ok     ls >>& out ls lksjdroieuw >>& out (out file has ls output and error)
+Builtin bg                           4/4 : ok     (this one's tricky) ping google.com (see a few pings, hit ctrl+z, from another terminal run ps afx | grep ping, note the pid, then back in the ish terminal) bg %1 (pinging should resume, but ctrl-c will not kill ping, as it's running in the background, so switch to other terminal) kill -9 <pid of ping>
+Builtin cd                           4/4 : ok     cd <somedirectory> (should change directories)
+Builtin exit                         4/4 : ok     exit (should exit shell)
+Builtin fg                           4/4 : ok     yes (while yes outputs 'y', hit ctrl-z, then type fg %1, ctrl+c to exit)
+Builtin jobs                         4/4 : ok     yes (same as above, but instead of fg %1, type jobs, yes should be listed)
+Builtin kill                         4/4 : ok     Yes (same as above, but instead of fg %1 or jobs type kill %1)
+Builtin setenv                       4/4 : ok     (rename .ishrc if it exists, start ish) setenv PATH /bin/ (then try ls if PATH was set, ls will work, if not, it will not)
+Builtin unsetenv                     4/4 : ok     (with PATH set) unsetenv PATH (then try ls which should not work)
+Signals (ctrl-c, ctrl-z)             4/4 : ok     (hitting ctrl-c or ctrl-z at the prompt should not cause shell to exit or sleep)
+Reads .ishrc                         4/4 : ok     (check for .ishrc, add ls on a line by itself, then run the shell, if ls output is printed, then ok; or if it contains a line with setenv PATH and the shell is finding above commands without you entering the full path, then ok)
+Correct prompt (hostname%)           2/2 : ok     (this should be apparent when the shell 
